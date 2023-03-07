@@ -31,36 +31,34 @@ HOMEWORK_VERDICTS = {
 
 logging.basicConfig(
     level=logging.INFO,
-    filename='program.log', 
+    filename='program.log',
     format='%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
            '%(funcName)s, %(lineno)s, %(message)s'
 )
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-handler = RotatingFileHandler('my_logger.log', maxBytes=50000000, backupCount=5)
+handler = RotatingFileHandler('my_logger.log', 
+                              maxBytes=50000000, backupCount=5)
 logger.addHandler(handler)
-
 
 def check_tokens():
     logging.info('Проверка наличия всех токенов')
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
-
 def send_message(bot, message):
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.info('Сообщение отправлено')
-    except Exception as error: 
+    except Exception as error:
         logger.error(f'Сбой при отправке сообщения: {error}')
-
 
 def get_api_answer(timestamp):
     try:
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
-            params={'from_date':timestamp}
+            params={'from_date': timestamp}
         )
         if response.status_code!=HTTPStatus.OK:
             raise WrongResponseCode(
@@ -73,7 +71,6 @@ def get_api_answer(timestamp):
     except Exception as error:
         raise WrongResponseCode(error)
 
-
 def check_response(response):
     logging.info('Проверка ответа API на корректность')
     if not isinstance(response, dict):
@@ -84,7 +81,6 @@ def check_response(response):
     if not isinstance(homeworks, list):
         raise KeyError('homeworks не является list')
     return homeworks
-
 
 def parse_status(homework):
     logger.debug('Создание сообщения')
@@ -99,7 +95,6 @@ def parse_status(homework):
               f'{verdict}')
     logger.debug('Сообщение сформировано')
     return result
-
 
 def main():
     """Основная логика работы бота."""
