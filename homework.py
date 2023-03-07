@@ -42,9 +42,11 @@ handler = RotatingFileHandler('my_logger.log',
                               maxBytes=50000000, backupCount=5)
 logger.addHandler(handler)
 
+
 def check_tokens():
     logging.info('Проверка наличия всех токенов')
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
+
 
 def send_message(bot, message):
     try:
@@ -52,6 +54,7 @@ def send_message(bot, message):
         logger.info('Сообщение отправлено')
     except Exception as error:
         logger.error(f'Сбой при отправке сообщения: {error}')
+
 
 def get_api_answer(timestamp):
     try:
@@ -71,6 +74,7 @@ def get_api_answer(timestamp):
     except Exception as error:
         raise WrongResponseCode(error)
 
+
 def check_response(response):
     logging.info('Проверка ответа API на корректность')
     if not isinstance(response, dict):
@@ -81,6 +85,7 @@ def check_response(response):
     if not isinstance(homeworks, list):
         raise KeyError('homeworks не является list')
     return homeworks
+
 
 def parse_status(homework):
     logger.debug('Создание сообщения')
@@ -95,6 +100,7 @@ def parse_status(homework):
               f'{verdict}')
     logger.debug('Сообщение сформировано')
     return result
+
 
 def main():
     """Основная логика работы бота."""
@@ -120,7 +126,7 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message, error)
-            if message not in error_message and message==True:
+            if message not in error_message and message is True:
                 message = send_message(bot, error_message)
                 logger.error(error_message)
 
