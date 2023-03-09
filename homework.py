@@ -61,7 +61,7 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params={'from_date': timestamp}
         )
-        if response.status_code!=HTTPStatus.OK:
+        if response.status_code != HTTPStatus.OK:
             raise WrongResponseCode(
                 f'Код ответа API: {response.status_code}'
                 f'Причина: {response.reason}. '
