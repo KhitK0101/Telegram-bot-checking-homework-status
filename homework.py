@@ -40,12 +40,12 @@ logger.setLevel(logging.DEBUG)
 
 
 def check_tokens():
-    """доступность переменных окружения"""
+    """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def send_message(bot, message):
-    """Отправляет сообщение"""
+    """Отправляет сообщение."""
     try:
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.debug(f'Сообщение отправлено: {message}')
@@ -54,7 +54,7 @@ def send_message(bot, message):
 
 
 def get_api_answer(timestamp):
-    """Запрос API"""
+    """Запрос API."""
     try:
         response = requests.get(
             ENDPOINT,
@@ -68,13 +68,13 @@ def get_api_answer(timestamp):
                 f'Текст: {response.text}.'
             )
         return response.json()
-    
+
     except Exception as error:
         raise WrongResponseCode(error)
 
 
 def check_response(response):
-    """API на соответствие документации"""
+    """API на соответствие документации."""
     if not isinstance(response, dict):
         raise TypeError('В {response} ожидается словарь')
     if response.get('homeworks') is None:
@@ -85,7 +85,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """статус конкретной работы"""
+    """статус конкретной работы."""
     if 'homework_name' not in homework:
         raise KeyError('Отсутствует ключ "homework_name"')
     homework_name = homework['homework_name']
@@ -100,7 +100,7 @@ def parse_status(homework):
 
 
 def main():
-    """Основная логика работы бота"""
+    """Основная логика работы бота."""
     if not check_tokens():
         message = 'Токен отсутствует'
         logging.critical(message)
