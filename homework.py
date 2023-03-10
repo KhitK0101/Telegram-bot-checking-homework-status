@@ -38,7 +38,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
@@ -70,22 +69,23 @@ def get_api_answer(timestamp):
         return response.json()
 
     except Exception as error:
-        raise WrongResponseCode(error)
+        raise WrongResponseCode(str(error))
 
 
 def check_response(response):
     """API на соответствие документации."""
     if not isinstance(response, dict):
-        raise TypeError('В {response} ожидается словарь')
+        raise TypeError(f'В {response} ожидается словарь')
     if response.get('homeworks') is None:
         raise KeyError('Вероятно введены не те переменные')
-    elif not isinstance(response['homeworks'], list):
-        raise TypeError('homeworks не является list')
-    return response['homeworks']
+    if not isinstance(response['homeworks'], list):
+        raise TypeError('Данные пришли не списком')
+    return response.get('homeworks')
 
 
 def parse_status(homework):
-    """статус конкретной работы."""
+    """Извлекает из информации о конкретной домашней работе статус этой работы.""" 
+    logger.debug('Создание сообщения')
     if 'homework_name' not in homework:
         raise KeyError('Отсутствует ключ "homework_name"')
     homework_name = homework['homework_name']
@@ -99,25 +99,35 @@ def parse_status(homework):
     return result
 
 
+
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        message = 'Токен отсутствует'
+        message = 'Отсутствует токен. Бот остановлен!'
         logging.critical(message)
         sys.exit(message)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_time = int(time.time())
+    current_times = int(time.time())
+    start_message = 'Бот начал работу'
+    logging.info(start_message)
+    previous_message = ''
     error_message = 'Капитальный сбой работы'
     while True:
         try:
-            response = get_api_answer(current_time)
-            homeworks = check_response(response)
-            current_time = response.get(
+            response = get_api_answer(current_times)
+            current_times = response.get(
                 'current_date', int(time.time())
             )
+            homeworks = check_response(response)
             if homeworks:
-                message = parse_status(homeworks)
-                time.sleep(RETRY_PERIOD)
+                message = parse_status(homeworks[0])
+            else:
+                message = 'Нет новых статусов'
+            if message != previous_message:
+                send_message(bot, message)
+                previous_message = message
+            else:
+                logging.info(message)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
