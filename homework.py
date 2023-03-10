@@ -38,6 +38,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
@@ -84,7 +85,7 @@ def check_response(response):
 
 
 def parse_status(homework):
-    """Извлекает из информации о конкретной домашней работе статус этой работы.""" 
+    """Извлекает из информации о конкретной домашней работе статус этой работы."""
     logger.debug('Создание сообщения')
     if 'homework_name' not in homework:
         raise KeyError('Отсутствует ключ "homework_name"')
@@ -97,7 +98,6 @@ def parse_status(homework):
               f'{verdict}')
     logger.debug('Сообщение сформировано')
     return result
-
 
 
 def main():
