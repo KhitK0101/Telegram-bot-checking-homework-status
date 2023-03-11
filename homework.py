@@ -34,7 +34,7 @@ def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
     check = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-    missing_tokens = [check.save() for globals()['missing_tokens'] 
+    missing_tokens = [check.save() for globals()['missing_tokens']
                       in check if globals() is None]
     if globals() is None:
         return missing_tokens
@@ -64,7 +64,8 @@ def get_api_answer(timestamp):
         )
     except requests.RequestException as error:
         message = (
-            'Ошибка отправки сообщения: 200. Запрос: {url}, {headers}, {params}.')
+            'Ошибка отправки сообщения: 200. '
+            'Запрос: {url}, {headers}, {params}.')
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
