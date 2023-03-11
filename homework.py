@@ -8,7 +8,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import WrongResponseCode
+from exceptions import WrongResponseCode, TelegramError
 
 load_dotenv()
 
@@ -27,76 +27,80 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename='program.log',
-    format='%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
-           '%(funcName)s, %(lineno)s, %(message)s'
-)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Pytest не проходит без докстрингов
 
 
 def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
+    check = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
+    missing_tokens = [check.save() for globals()['missing_tokens'] 
+                      in check if globals() is None]
+    if globals() is None:
+        return missing_tokens
+    if missing_tokens is not None:
+        logging.error('Сбой')
+        return ValueError('Нужно построить зиккурат')
 
 
 def send_message(bot, message):
     """Отправляет сообщение."""
     try:
+        logging.info('Отправляет сообщение.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logger.debug(f'Сообщение отправлено: {message}')
-    except Exception as error:
-        logger.error(f'Сбой при отправке сообщения: {error}')
+    except telegram.error.TelegramError as error:
+        logging.error(f'Сбой при отправке сообщения: {error}')
+    logging.debug(f'Сообщение отправлено: {message}')
 
 
 def get_api_answer(timestamp):
     """Запрос API."""
     try:
+        logging.info('Запрос API.')
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
             params={'from_date': timestamp}
         )
-        if response.status_code != HTTPStatus.OK:
-            raise WrongResponseCode(
-                f'Код ответа API: {response.status_code}'
-                f'Причина: {response.reason}. '
-                f'Текст: {response.text}.'
-            )
-        return response.json()
-
-    except Exception as error:
-        raise WrongResponseCode(str(error))
+    except requests.RequestException as error:
+        message = (
+            'Ошибка отправки сообщения: 200. Запрос: {url}, {headers}, {params}.')
+        raise ConnectionError(str(message, error))
+    if response.status_code != HTTPStatus.OK:
+        raise WrongResponseCode(
+            f'Код ответа API: {response.status_code}'
+            f'Причина: {response.reason}. '
+            f'Текст: {response.text}.'
+        )
+    return response.json()
 
 
 def check_response(response):
     """API на соответствие документации."""
+    logging.info('API на соответствие документации.')
     if not isinstance(response, dict):
-        raise TypeError(f'В {response} ожидается словарь')
-    if response.get('homeworks') is None:
-        raise KeyError('Вероятно введены не те переменные')
+        raise TypeError('В ответе API ожидается словарь')
+    if 'homeworks' not in response:
+        raise KeyError('нет ключа homeworks в ответе API')
     if not isinstance(response['homeworks'], list):
-        raise TypeError('Данные пришли не списком')
+        raise TypeError('данные homeworks не являются списком')
     return response.get('homeworks')
 
 
 def parse_status(homework):
     """Извлекает статус о конкретной домашней работе."""
-    logger.debug('Создание сообщения')
+    logging.info('Извлекает статус о конкретной домашней работе.')
+    logging.debug('Создание сообщения')
     if 'homework_name' not in homework:
         raise KeyError('Отсутствует ключ "homework_name"')
     homework_name = homework['homework_name']
-    status = homework['status']
-    if status not in HOMEWORK_VERDICTS.keys():
-        raise KeyError('Отсутствует ключ "status"')
+    status = homework.get('status')
+    if status not in HOMEWORK_VERDICTS:
+        raise ValueError('Отсутствует ключ "status"')
     verdict = HOMEWORK_VERDICTS[status]
     result = (f'Изменился статус проверки работы "{homework_name}". '
               f'{verdict}')
-    logger.debug('Сообщение сформировано')
+    logging.debug('Сообщение сформировано')
     return result
 
 
@@ -108,36 +112,46 @@ def main():
         sys.exit(message)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_times = int(time.time())
-    start_message = 'Бот начал работу'
-    logging.info(start_message)
     previous_message = ''
-    error_message = 'Капитальный сбой работы'
+    message = 'Капитальный сбой работы'
     while True:
         try:
             response = get_api_answer(current_times)
-            current_times = response.get(
-                'current_date', int(time.time())
-            )
             homeworks = check_response(response)
             if homeworks:
                 message = parse_status(homeworks[0])
             else:
-                message = 'Нет новых статусов'
+                logging.info(message)
+                continue
             if message != previous_message:
                 send_message(bot, message)
                 previous_message = message
             else:
                 logging.info(message)
+            current_times = response.get(
+                'current_date', int(time.time())
+            )
+
+        except TelegramError as error:
+            message = f'Сбой в работе программы: {error}'
+            logging.error(message, error)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message, error)
-            if message not in error_message and message is True:
-                message = send_message(bot, error_message)
-                logger.error(error_message)
+            if message is True:
+                message = send_message(bot, message)
+                logging.error(message)
         finally:
             time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename='program.log',
+        handler=[logging.StreamHandler(stream=sys.stdout)],
+        format='%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
+        '%(funcName)s, %(lineno)s, %(message)s'
+    )
     main()
