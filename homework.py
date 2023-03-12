@@ -138,7 +138,7 @@ def main():
 
         except TelegramError as error:
             message = f'Сообщение не отправлено, временная '
-            f'метка не обновлена : {error}'
+            f'метка не обновлена: {error}'
             logging.error(message)
 
         except Exception as error:
