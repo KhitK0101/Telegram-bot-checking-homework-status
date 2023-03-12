@@ -68,9 +68,8 @@ def get_api_answer(timestamp):
             params={'from_date': timestamp}
         )
     except requests.RequestException as error:
-        message = (
-            'Ошибка отправки сообщения: 200. Запрос: {url}, {params}.'
-            ).format(**prm_req)
+        message = ('Ошибка отправки сообщения: 200. Запрос: {url}, {params}.'
+                   ).format(**prm_req)
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
