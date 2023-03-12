@@ -39,7 +39,7 @@ def check_tokens():
             missing_tokens.append(token_name)
         if missing_tokens:
             logging.error('Сбой')
-            return ValueError(f"Отсутствует токен")
+            return ValueError('Отсутствует токен')
 
 
 def send_message(bot, message):
@@ -69,8 +69,7 @@ def get_api_answer(timestamp):
     except requests.RequestException as error:
         message = (
             'Ошибка отправки сообщения: 200. '
-            'Запрос: {url}, {params}.'.format(prm_req)
-        )
+            'Запрос: {url}, {params}.').format(prm_req)
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
