@@ -42,7 +42,6 @@ def check_tokens():
             return ValueError(f"Отсутствует токен")
 
 
-
 def send_message(bot, message):
     """Отправляет сообщение."""
     logging.info('Отправляет сообщение.')
@@ -71,7 +70,7 @@ def get_api_answer(timestamp):
         message = (
             'Ошибка отправки сообщения: 200. '
             'Запрос: {url}, {params}.'.format(prm_req)
-            )
+        )
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
@@ -146,9 +145,9 @@ def main():
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.error(message)
-            if message != previous_message: 
-                send_message(bot, message) 
-                previous_message = message 
+            if message != previous_message:
+                send_message(bot, message)
+                previous_message = message
         finally:
             time.sleep(RETRY_PERIOD)
 
