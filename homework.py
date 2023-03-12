@@ -67,7 +67,7 @@ def get_api_answer(timestamp):
             params={'from_date': timestamp}
         )
     except requests.RequestException as error:
-        message = (
+        message=(
             'Ошибка отправки сообщения: 200. '
             'Запрос: {url}, {params}.').format(prm_req)
         raise ConnectionError(str(message, error))
@@ -137,7 +137,7 @@ def main():
             )
 
         except TelegramError as error:
-            message = f'Сообщение не отправлено, временная '
+            message=f'Сообщение не отправлено, временная '
             f'метка не обновлена: {error}'
             logging.error(message)
 
