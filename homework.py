@@ -56,6 +56,7 @@ def send_message(bot, message):
 def get_api_answer(timestamp):
     """Запрос API."""
     logging.info('Запрос API.')
+    timestamp = int(time.time())
     prm_req = {
         'url': ENDPOINT,
         'params': {'from_date': timestamp},
@@ -67,9 +68,9 @@ def get_api_answer(timestamp):
             params={'from_date': timestamp}
         )
     except requests.RequestException as error:
-        message=(
-            'Ошибка отправки сообщения: 200. '
-            'Запрос: {url}, {params}.').format(prm_req)
+        message = (
+            'Ошибка отправки сообщения: 200. Запрос: {url}, {params}.'
+            ).format(**prm_req)
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
@@ -137,7 +138,7 @@ def main():
             )
 
         except TelegramError as error:
-            message=f'Сообщение не отправлено, временная '
+            message = 'Сообщение не отправлено, временная '
             f'метка не обновлена: {error}'
             logging.error(message)
 
