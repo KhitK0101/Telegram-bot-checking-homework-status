@@ -27,36 +27,41 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
-# Pytest не проходит без докстрингов
 
 
 def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
     check = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-    missing_tokens = [check.save() for globals()['missing_tokens']
-                      in check if globals() is None]
-    if globals() is None:
-        return missing_tokens
-    if missing_tokens is not None:
-        logging.error('Сбой')
-        return ValueError('Нужно построить зиккурат')
+    missing_tokens = {}
+    for token_name in check:
+        if globals()[token_name] is None:
+            missing_tokens.append(token_name)
+        if missing_tokens:
+            logging.error('Сбой')
+            return ValueError(f"Отсутствует токен")
+
 
 
 def send_message(bot, message):
     """Отправляет сообщение."""
+    logging.info('Отправляет сообщение.')
     try:
-        logging.info('Отправляет сообщение.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except telegram.error.TelegramError as error:
         logging.error(f'Сбой при отправке сообщения: {error}')
+        raise TelegramError
     logging.debug(f'Сообщение отправлено: {message}')
 
 
 def get_api_answer(timestamp):
     """Запрос API."""
+    logging.info('Запрос API.')
+    prm_req = {
+        'url': ENDPOINT,
+        'params': {'from_date': timestamp},
+    }
     try:
-        logging.info('Запрос API.')
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
@@ -65,7 +70,8 @@ def get_api_answer(timestamp):
     except requests.RequestException as error:
         message = (
             'Ошибка отправки сообщения: 200. '
-            'Запрос: {url}, {headers}, {params}.')
+            'Запрос: {url}, {params}.'.format(prm_req)
+            )
         raise ConnectionError(str(message, error))
     if response.status_code != HTTPStatus.OK:
         raise WrongResponseCode(
@@ -90,14 +96,13 @@ def check_response(response):
 
 def parse_status(homework):
     """Извлекает статус о конкретной домашней работе."""
-    logging.info('Извлекает статус о конкретной домашней работе.')
     logging.debug('Создание сообщения')
     if 'homework_name' not in homework:
         raise KeyError('Отсутствует ключ "homework_name"')
     homework_name = homework['homework_name']
     status = homework.get('status')
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError('Отсутствует ключ "status"')
+        raise ValueError('Получен непредусмотренный статус: "status"')
     verdict = HOMEWORK_VERDICTS[status]
     result = (f'Изменился статус проверки работы "{homework_name}". '
               f'{verdict}')
@@ -134,15 +139,16 @@ def main():
             )
 
         except TelegramError as error:
-            message = f'Сбой в работе программы: {error}'
-            logging.error(message, error)
+            message = f'Сообщение не отправлено, временная '
+            f'метка не обновлена : {error}'
+            logging.error(message)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            logging.error(message, error)
-            if message is True:
-                message = send_message(bot, message)
-                logging.error(message)
+            logging.error(message)
+            if message != previous_message: 
+                send_message(bot, message) 
+                previous_message = message 
         finally:
             time.sleep(RETRY_PERIOD)
 
@@ -150,8 +156,7 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.DEBUG,
-        filename='program.log',
-        handler=[logging.StreamHandler(stream=sys.stdout)],
+        handlers=logging.StreamHandler(stream=sys.stdout),
         format='%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
         '%(funcName)s, %(lineno)s, %(message)s'
     )
