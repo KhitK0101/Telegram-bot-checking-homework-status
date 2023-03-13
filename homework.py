@@ -33,13 +33,13 @@ def check_tokens():
     """доступность переменных окружения."""
     return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
     check = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-    missing_tokens = {}
+    missing_tokens = []
     for token_name in check:
         if globals()[token_name] is None:
             missing_tokens.append(token_name)
         if missing_tokens:
             logging.error('Сбой')
-            return ValueError('Отсутствует токен')
+            return ValueError(f'Отсутствует токен: {missing_tokens}')
 
 
 def send_message(bot, message):
@@ -49,7 +49,7 @@ def send_message(bot, message):
         bot.send_message(TELEGRAM_CHAT_ID, message)
     except telegram.error.TelegramError as error:
         logging.error(f'Сбой при отправке сообщения: {error}')
-        raise TelegramError
+        raise TelegramError('Ошибка отправки сообщения')
     logging.debug(f'Сообщение отправлено: {message}')
 
 
@@ -59,13 +59,12 @@ def get_api_answer(timestamp):
     timestamp = int(time.time())
     prm_req = {
         'url': ENDPOINT,
+        'headers': HEADERS,
         'params': {'from_date': timestamp},
     }
     try:
         response = requests.get(
-            ENDPOINT,
-            headers=HEADERS,
-            params={'from_date': timestamp}
+            prm_req
         )
     except requests.RequestException as error:
         message = ('Ошибка отправки сообщения: 200. Запрос: {url}, {params}.'
@@ -100,7 +99,7 @@ def parse_status(homework):
     homework_name = homework['homework_name']
     status = homework.get('status')
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError('Получен непредусмотренный статус: "status"')
+        raise ValueError(f'Получен непредусмотренный статус: {status}')
     verdict = HOMEWORK_VERDICTS[status]
     result = (f'Изменился статус проверки работы "{homework_name}". '
               f'{verdict}')
@@ -117,7 +116,6 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_times = int(time.time())
     previous_message = ''
-    message = 'Капитальный сбой работы'
     while True:
         try:
             response = get_api_answer(current_times)
@@ -125,7 +123,7 @@ def main():
             if homeworks:
                 message = parse_status(homeworks[0])
             else:
-                logging.info(message)
+                logging.info('Изменения не найдены')
                 continue
             if message != previous_message:
                 send_message(bot, message)
