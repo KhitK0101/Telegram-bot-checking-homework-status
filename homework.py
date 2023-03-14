@@ -107,10 +107,10 @@ def parse_status(homework):
 
 def main():
     """Основная логика работы бота."""
-    if not check_tokens():
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        current_times = int(time.time())
-        previous_message = ''
+    check_tokens()
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    current_times = int(time.time())
+    previous_message = ''
     while True:
         try:
             response = get_api_answer(current_times)
@@ -131,9 +131,8 @@ def main():
 
         except TelegramError as error:
             message = ('Сообщение не отправлено, временная '
-                       f'метка не обновлена: {error}',
-                       logging.error(message),
-                       )
+                       f'метка не обновлена: {error}')
+            logging.error(message)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
