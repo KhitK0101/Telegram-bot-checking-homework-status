@@ -31,15 +31,15 @@ HOMEWORK_VERDICTS = {
 
 def check_tokens():
     """доступность переменных окружения."""
-    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
     check = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
     missing_tokens = []
     for token_name in check:
         if globals()[token_name] is None:
             missing_tokens.append(token_name)
-        if missing_tokens:
-            logging.error('Сбой')
-            return ValueError(f'Отсутствует токен: {missing_tokens}')
+    if missing_tokens:
+        message = f'Отсутствует токен: {missing_tokens}'
+        logging.critical(message)
+        raise ValueError(message)
 
 
 def send_message(bot, message):
@@ -63,9 +63,7 @@ def get_api_answer(timestamp):
         'params': {'from_date': timestamp},
     }
     try:
-        response = requests.get(
-            prm_req
-        )
+        response = requests.get(**prm_req)
     except requests.RequestException as error:
         message = ('Ошибка отправки сообщения: 200. Запрос: {url}, {params}.'
                    ).format(**prm_req)
@@ -110,12 +108,9 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        message = 'Отсутствует токен. Бот остановлен!'
-        logging.critical(message)
-        sys.exit(message)
-    bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_times = int(time.time())
-    previous_message = ''
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        current_times = int(time.time())
+        previous_message = ''
     while True:
         try:
             response = get_api_answer(current_times)
@@ -135,9 +130,10 @@ def main():
             )
 
         except TelegramError as error:
-            message = 'Сообщение не отправлено, временная '
-            f'метка не обновлена: {error}'
-            logging.error(message)
+            message = ('Сообщение не отправлено, временная '
+                f'метка не обновлена: {error}',
+                logging.error(message),
+            )
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
@@ -152,8 +148,8 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.DEBUG,
-        handlers=logging.StreamHandler(stream=sys.stdout),
-        format='%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
-        '%(funcName)s, %(lineno)s, %(message)s'
+        handlers=[logging.StreamHandler(stream=sys.stdout)],
+        format=('%(asctime)s, %(levelname)s, %(name)s,%(filename)s, '
+                '%(funcName)s, %(lineno)s, %(message)s')
     )
     main()
