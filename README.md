@@ -35,8 +35,6 @@ pip install -r requirements.txt
 pip install python-telegram-bot==13.7
 
 pip install python-dotenv
-
-pip install pytest
 ```
 3. Создать файл виртуального окружения ```venv``` в корневой директории проекта:
 ```bash
